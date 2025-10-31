@@ -18,7 +18,7 @@ const pool = new Pool({
 });
 
 app.use(cors({
-  origin: true,
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:5000'],
   credentials: true
 }));
 app.use(express.json());
@@ -66,6 +66,7 @@ app.post('/api/admin/login', async (req, res) => {
     res.cookie('adminToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 

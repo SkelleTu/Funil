@@ -100,7 +100,6 @@ class AnalyticsTracker {
     await this.sendData('/visitor', { visitorId: this.visitorId, userData: visitorData });
 
     this.setupEventListeners();
-    this.trackPageView();
     this.isInitialized = true;
   }
 
