@@ -17,7 +17,7 @@ function ConfirmationPage({ userData }: ConfirmationPageProps) {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(236,72,153,0.15),transparent_50%),radial-gradient(circle_at_70%_60%,rgba(168,85,247,0.15),transparent_50%)]"></div>
 
       <div className="relative w-full max-w-2xl">
-        <div className="mb-8">
+        <div className="py-8">
           <Logo />
         </div>
 

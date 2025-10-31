@@ -73,11 +73,11 @@ function LandingPage({ onNavigate }: LandingPageProps) {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(236,72,153,0.15),transparent_50%),radial-gradient(circle_at_70%_60%,rgba(168,85,247,0.15),transparent_50%)]"></div>
 
       <div className="relative">
-        <header className="container mx-auto px-4 py-4">
+        <header className="container mx-auto px-4 py-8">
           <Logo />
         </header>
 
-        <main className="container mx-auto px-4 py-6">
+        <main className="container mx-auto px-4 py-8">
           <div className="max-w-5xl mx-auto text-center mb-12">
             <div className="inline-block mb-8 px-6 py-2 bg-gradient-to-r from-pink-500/20 to-purple-500/20 rounded-full border border-pink-500/30">
               <p className="text-pink-300 font-semibold">Fórmula Engajamento</p>
