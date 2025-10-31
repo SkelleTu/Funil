@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Activity, FileText, Eye, Clock, MapPin, Monitor, Calendar } from 'lucide-react';
+import { Users, Activity, FileText, Eye, Clock, MapPin, Monitor, LogOut, Calendar, Mail, Phone, User } from 'lucide-react';
 
 interface Stats {
   totalVisitors: number;
@@ -42,31 +42,20 @@ interface Registration {
   registration_data: any;
 }
 
-interface Event {
-  id: number;
-  visitor_id: string;
-  event_type: string;
-  event_data: any;
-  page_url: string;
-  timestamp: string;
-  ip_address: string;
-  city: string;
-  country: string;
-}
-
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
   const [selectedVisitor, setSelectedVisitor] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'visitors' | 'registrations' | 'events'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'visitors' | 'registrations'>('overview');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     checkAuth();
     loadData();
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const checkAuth = async () => {
@@ -86,22 +75,19 @@ export default function AdminDashboard() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [statsRes, visitorsRes, registrationsRes, eventsRes] = await Promise.all([
+      const [statsRes, visitorsRes, registrationsRes] = await Promise.all([
         fetch('/api/admin/stats', { credentials: 'include' }),
         fetch('/api/admin/visitors?limit=100', { credentials: 'include' }),
-        fetch('/api/admin/registrations?limit=100', { credentials: 'include' }),
-        fetch('/api/admin/events?limit=200', { credentials: 'include' })
+        fetch('/api/admin/registrations?limit=100', { credentials: 'include' })
       ]);
 
       const statsData = await statsRes.json();
       const visitorsData = await visitorsRes.json();
       const registrationsData = await registrationsRes.json();
-      const eventsData = await eventsRes.json();
 
       setStats(statsData);
       setVisitors(visitorsData.visitors);
       setRegistrations(registrationsData.registrations);
-      setEvents(eventsData.events);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -130,221 +116,268 @@ export default function AdminDashboard() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR');
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const translateEventType = (eventType: string, eventData: any) => {
+    switch (eventType) {
+      case 'click':
+        if (eventData?.text) {
+          return `Clicou em "${eventData.text.substring(0, 50)}"`;
+        }
+        return 'Clicou na página';
+      case 'scroll':
+        return `Rolou a página até ${eventData?.depth || 0}%`;
+      case 'visibility_change':
+        return eventData?.hidden ? 'Saiu da aba' : 'Voltou para a aba';
+      default:
+        return eventType;
+    }
+  };
+
+  const getPageName = (url: string) => {
+    if (!url) return 'Página';
+    if (url.includes('/registration') || url.includes('registro')) return 'Página de Cadastro';
+    if (url.includes('/confirmation') || url.includes('confirmacao')) return 'Página de Confirmação';
+    return 'Página Inicial';
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Carregando...</div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-gray-950 flex items-center justify-center">
+        <div className="text-white text-2xl">Carregando...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-gray-950">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(236,72,153,0.15),transparent_50%),radial-gradient(circle_at_70%_60%,rgba(168,85,247,0.15),transparent_50%)]"></div>
+
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">📊 Painel de Analytics</h1>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
-          >
-            Sair
-          </button>
+      <div className="relative border-b border-pink-500/20 backdrop-blur-sm bg-gray-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+                Painel Administrativo
+              </h1>
+              <p className="text-purple-300 mt-1">Fórmula Engajamento - Dados dos Clientes</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-lg transition-all duration-300 shadow-lg shadow-pink-500/20"
+            >
+              <LogOut className="w-5 h-5" />
+              Sair
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-6 rounded-xl shadow-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <div className="bg-gradient-to-br from-pink-500/20 to-purple-500/20 backdrop-blur-sm border border-pink-500/30 p-6 rounded-2xl shadow-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-200 text-sm">Total Visitantes</p>
-                  <p className="text-3xl font-bold mt-1">{stats.totalVisitors}</p>
+                  <p className="text-purple-300 text-sm font-medium">Total de Visitantes</p>
+                  <p className="text-4xl font-bold text-white mt-2">{stats.totalVisitors}</p>
                 </div>
-                <Users className="w-12 h-12 text-blue-200" />
+                <div className="p-3 bg-pink-500/20 rounded-xl">
+                  <Users className="w-8 h-8 text-pink-400" />
+                </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-600 to-green-700 p-6 rounded-xl shadow-lg">
+            <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-500/30 p-6 rounded-2xl shadow-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-200 text-sm">Últimas 24h</p>
-                  <p className="text-3xl font-bold mt-1">{stats.visitorsLast24h}</p>
+                  <p className="text-green-300 text-sm font-medium">Hoje</p>
+                  <p className="text-4xl font-bold text-white mt-2">{stats.visitorsLast24h}</p>
                 </div>
-                <Clock className="w-12 h-12 text-green-200" />
+                <div className="p-3 bg-green-500/20 rounded-xl">
+                  <Clock className="w-8 h-8 text-green-400" />
+                </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-600 to-purple-700 p-6 rounded-xl shadow-lg">
+            <div className="bg-gradient-to-br from-purple-500/20 to-indigo-500/20 backdrop-blur-sm border border-purple-500/30 p-6 rounded-2xl shadow-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-200 text-sm">Total Eventos</p>
-                  <p className="text-3xl font-bold mt-1">{stats.totalEvents}</p>
+                  <p className="text-purple-300 text-sm font-medium">Interações</p>
+                  <p className="text-4xl font-bold text-white mt-2">{stats.totalEvents}</p>
                 </div>
-                <Activity className="w-12 h-12 text-purple-200" />
+                <div className="p-3 bg-purple-500/20 rounded-xl">
+                  <Activity className="w-8 h-8 text-purple-400" />
+                </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-pink-600 to-pink-700 p-6 rounded-xl shadow-lg">
+            <div className="bg-gradient-to-br from-pink-500/20 to-rose-500/20 backdrop-blur-sm border border-pink-500/30 p-6 rounded-2xl shadow-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-pink-200 text-sm">Cadastros</p>
-                  <p className="text-3xl font-bold mt-1">{stats.totalRegistrations}</p>
+                  <p className="text-pink-300 text-sm font-medium">Cadastros</p>
+                  <p className="text-4xl font-bold text-white mt-2">{stats.totalRegistrations}</p>
                 </div>
-                <FileText className="w-12 h-12 text-pink-200" />
+                <div className="p-3 bg-pink-500/20 rounded-xl">
+                  <FileText className="w-8 h-8 text-pink-400" />
+                </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-orange-600 to-orange-700 p-6 rounded-xl shadow-lg">
+            <div className="bg-gradient-to-br from-orange-500/20 to-amber-500/20 backdrop-blur-sm border border-orange-500/30 p-6 rounded-2xl shadow-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-200 text-sm">Visualizações</p>
-                  <p className="text-3xl font-bold mt-1">{stats.totalPageViews}</p>
+                  <p className="text-orange-300 text-sm font-medium">Páginas Vistas</p>
+                  <p className="text-4xl font-bold text-white mt-2">{stats.totalPageViews}</p>
                 </div>
-                <Eye className="w-12 h-12 text-orange-200" />
+                <div className="p-3 bg-orange-500/20 rounded-xl">
+                  <Eye className="w-8 h-8 text-orange-400" />
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* Tabs */}
-        <div className="flex space-x-2 mb-6 border-b border-gray-700">
-          {['overview', 'visitors', 'registrations', 'events'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`px-6 py-3 font-medium transition ${
-                activeTab === tab
-                  ? 'border-b-2 border-purple-500 text-purple-400'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {tab === 'overview' && 'Visão Geral'}
-              {tab === 'visitors' && 'Visitantes'}
-              {tab === 'registrations' && 'Cadastros'}
-              {tab === 'events' && 'Eventos'}
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-3 mb-8">
+          {[
+            { id: 'overview', label: 'Visão Geral', icon: Activity },
+            { id: 'visitors', label: 'Visitantes', icon: Users },
+            { id: 'registrations', label: 'Cadastros', icon: FileText }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                  activeTab === tab.id
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/30'
+                    : 'bg-white/5 text-purple-300 hover:bg-white/10 border border-purple-500/20'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Content */}
         {activeTab === 'visitors' && (
-          <div className="bg-gray-800 rounded-xl p-6">
-            <h2 className="text-xl font-bold mb-4">Lista de Visitantes</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left p-3">ID</th>
-                    <th className="text-left p-3">Localização</th>
-                    <th className="text-left p-3">Dispositivo</th>
-                    <th className="text-left p-3">Navegador</th>
-                    <th className="text-left p-3">Primeira Visita</th>
-                    <th className="text-left p-3">Última Visita</th>
-                    <th className="text-left p-3">Visitas</th>
-                    <th className="text-left p-3">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visitors.map((visitor) => (
-                    <tr key={visitor.id} className="border-b border-gray-700 hover:bg-gray-700/50">
-                      <td className="p-3 font-mono text-sm">{visitor.visitor_id.substring(0, 12)}...</td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {visitor.city}, {visitor.country}
+          <div className="bg-gray-900/50 backdrop-blur-sm border border-pink-500/20 rounded-2xl p-6 shadow-2xl">
+            <h2 className="text-2xl font-bold text-white mb-6">Lista de Visitantes</h2>
+            <div className="space-y-4">
+              {visitors.map((visitor) => (
+                <div
+                  key={visitor.id}
+                  className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-pink-500/20 rounded-xl p-6 hover:border-pink-500/40 transition-all duration-300"
+                >
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    <div className="lg:col-span-2">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-pink-500/20 rounded-lg">
+                          <MapPin className="w-5 h-5 text-pink-400" />
                         </div>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-1">
-                          <Monitor className="w-4 h-4" />
-                          {visitor.device_type}
+                        <div>
+                          <p className="text-white font-semibold text-lg">
+                            {visitor.city}, {visitor.country}
+                          </p>
+                          <p className="text-purple-300 text-sm">{visitor.region}</p>
                         </div>
-                      </td>
-                      <td className="p-3">{visitor.browser}</td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {formatDate(visitor.first_visit)}
-                        </div>
-                      </td>
-                      <td className="p-3">{formatDate(visitor.last_visit)}</td>
-                      <td className="p-3">
-                        <span className="bg-blue-600 px-2 py-1 rounded">{visitor.total_visits}</span>
-                      </td>
-                      <td className="p-3">
-                        <button
-                          onClick={() => viewVisitorDetails(visitor.visitor_id)}
-                          className="text-purple-400 hover:text-purple-300"
-                        >
-                          Ver Detalhes
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Monitor className="w-4 h-4 text-purple-400" />
+                        <p className="text-purple-300 text-sm">Dispositivo</p>
+                      </div>
+                      <p className="text-white font-medium">{visitor.device_type}</p>
+                      <p className="text-purple-300 text-sm">{visitor.browser}</p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-4 h-4 text-purple-400" />
+                        <p className="text-purple-300 text-sm">Última Visita</p>
+                      </div>
+                      <p className="text-white font-medium">{formatDate(visitor.last_visit)}</p>
+                      <p className="text-purple-300 text-sm">{visitor.total_visits} visitas</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => viewVisitorDetails(visitor.visitor_id)}
+                    className="mt-4 w-full bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 text-pink-300 font-medium py-2 px-4 rounded-lg transition-all duration-300 border border-pink-500/30"
+                  >
+                    Ver Todos os Detalhes
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {activeTab === 'registrations' && (
-          <div className="bg-gray-800 rounded-xl p-6">
-            <h2 className="text-xl font-bold mb-4">Cadastros Realizados</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left p-3">Data</th>
-                    <th className="text-left p-3">Nome</th>
-                    <th className="text-left p-3">Email</th>
-                    <th className="text-left p-3">Telefone</th>
-                    <th className="text-left p-3">Localização</th>
-                    <th className="text-left p-3">Dispositivo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {registrations.map((reg) => (
-                    <tr key={reg.id} className="border-b border-gray-700 hover:bg-gray-700/50">
-                      <td className="p-3">{formatDate(reg.registered_at)}</td>
-                      <td className="p-3 font-medium">{reg.name}</td>
-                      <td className="p-3">{reg.email}</td>
-                      <td className="p-3">{reg.phone}</td>
-                      <td className="p-3">{reg.city}, {reg.country}</td>
-                      <td className="p-3">{reg.device_type}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+          <div className="bg-gray-900/50 backdrop-blur-sm border border-pink-500/20 rounded-2xl p-6 shadow-2xl">
+            <h2 className="text-2xl font-bold text-white mb-6">Pessoas Cadastradas</h2>
+            <div className="space-y-4">
+              {registrations.map((reg) => (
+                <div
+                  key={reg.id}
+                  className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-pink-500/20 rounded-xl p-6"
+                >
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-pink-500/20 rounded-xl">
+                          <User className="w-6 h-6 text-pink-400" />
+                        </div>
+                        <div>
+                          <p className="text-white font-bold text-xl">{reg.name}</p>
+                          <p className="text-purple-300 text-sm">{formatDate(reg.registered_at)}</p>
+                        </div>
+                      </div>
 
-        {activeTab === 'events' && (
-          <div className="bg-gray-800 rounded-xl p-6">
-            <h2 className="text-xl font-bold mb-4">Eventos Recentes</h2>
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
-              {events.map((event) => (
-                <div key={event.id} className="bg-gray-700/50 p-4 rounded-lg flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="bg-purple-600 px-2 py-1 rounded text-sm">{event.event_type}</span>
-                      <span className="text-gray-400 text-sm">{formatDate(event.timestamp)}</span>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-purple-400" />
+                          <p className="text-white break-all">{reg.email}</p>
+                        </div>
+                        {reg.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-purple-400" />
+                            <p className="text-white">{reg.phone}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-300 mb-1">{event.page_url}</p>
-                    {event.event_data && (
-                      <pre className="text-xs text-gray-400 mt-2 bg-gray-900 p-2 rounded overflow-x-auto">
-                        {JSON.stringify(event.event_data, null, 2)}
-                      </pre>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-400 ml-4">
-                    {event.city}, {event.country}
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <MapPin className="w-4 h-4 text-purple-400" />
+                        <p className="text-purple-300 text-sm font-medium">Localização</p>
+                      </div>
+                      <p className="text-white font-medium mb-1">
+                        {reg.city}, {reg.country}
+                      </p>
+
+                      <div className="flex items-center gap-2 mt-4">
+                        <Monitor className="w-4 h-4 text-purple-400" />
+                        <p className="text-purple-300 text-sm">Cadastrou pelo: <span className="text-white font-medium">{reg.device_type}</span></p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -354,39 +387,55 @@ export default function AdminDashboard() {
 
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-gray-800 rounded-xl p-6">
-              <h2 className="text-xl font-bold mb-4">Visitantes Recentes</h2>
-              <div className="space-y-3">
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-pink-500/20 rounded-2xl p-6 shadow-2xl">
+              <h2 className="text-2xl font-bold text-white mb-6">Visitantes Recentes</h2>
+              <div className="space-y-4">
                 {visitors.slice(0, 5).map((visitor) => (
-                  <div key={visitor.id} className="bg-gray-700/50 p-4 rounded-lg">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="font-mono text-sm">{visitor.visitor_id.substring(0, 16)}...</span>
-                      <span className="text-xs text-gray-400">{formatDate(visitor.last_visit)}</span>
+                  <div key={visitor.id} className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-pink-500/20 rounded-xl p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-pink-400" />
+                        <span className="text-white font-medium">{visitor.city}, {visitor.country}</span>
+                      </div>
+                      <span className="text-purple-300 text-xs">{formatDate(visitor.last_visit)}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
-                      <div>📍 {visitor.city}, {visitor.country}</div>
-                      <div>💻 {visitor.device_type}</div>
-                      <div>🌐 {visitor.browser}</div>
-                      <div>🔢 {visitor.total_visits} visitas</div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Monitor className="w-3 h-3 text-purple-400" />
+                        <span className="text-purple-200">{visitor.device_type}</span>
+                      </div>
+                      <div className="text-purple-200">{visitor.browser}</div>
+                      <div className="text-pink-300 font-medium">{visitor.total_visits} visitas</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-xl p-6">
-              <h2 className="text-xl font-bold mb-4">Cadastros Recentes</h2>
-              <div className="space-y-3">
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-pink-500/20 rounded-2xl p-6 shadow-2xl">
+              <h2 className="text-2xl font-bold text-white mb-6">Cadastros Recentes</h2>
+              <div className="space-y-4">
                 {registrations.slice(0, 5).map((reg) => (
-                  <div key={reg.id} className="bg-gray-700/50 p-4 rounded-lg">
+                  <div key={reg.id} className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-pink-500/20 rounded-xl p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <span className="font-medium">{reg.name}</span>
-                      <span className="text-xs text-gray-400">{formatDate(reg.registered_at)}</span>
+                      <span className="text-white font-bold text-lg">{reg.name}</span>
+                      <span className="text-purple-300 text-xs">{formatDate(reg.registered_at)}</span>
                     </div>
-                    <div className="text-sm text-gray-300 space-y-1">
-                      <div>📧 {reg.email}</div>
-                      {reg.phone && <div>📞 {reg.phone}</div>}
-                      <div>📍 {reg.city}, {reg.country}</div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-3 h-3 text-purple-400" />
+                        <span className="text-purple-200 break-all">{reg.email}</span>
+                      </div>
+                      {reg.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-3 h-3 text-purple-400" />
+                          <span className="text-purple-200">{reg.phone}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3 h-3 text-purple-400" />
+                        <span className="text-purple-200">{reg.city}, {reg.country}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -398,56 +447,70 @@ export default function AdminDashboard() {
 
       {/* Modal de detalhes do visitante */}
       {selectedVisitor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setSelectedVisitor(null)}>
-          <div className="bg-gray-800 rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-2xl font-bold mb-4">Detalhes do Visitante</h2>
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto" 
+          onClick={() => setSelectedVisitor(null)}
+        >
+          <div 
+            className="bg-gradient-to-br from-gray-900 via-purple-900/50 to-gray-900 border-2 border-pink-500/30 rounded-2xl p-8 max-w-4xl w-full my-8 shadow-2xl" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-3xl font-bold text-white mb-6 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+              Detalhes Completos do Visitante
+            </h2>
             
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div>
-                <p className="text-gray-400 text-sm">ID do Visitante</p>
-                <p className="font-mono">{selectedVisitor.visitor.visitor_id}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-pink-500/20 p-4 rounded-xl">
+                <p className="text-purple-300 text-sm mb-1">Localização</p>
+                <p className="text-white font-bold text-lg break-words">
+                  {selectedVisitor.visitor.city}, {selectedVisitor.visitor.region}, {selectedVisitor.visitor.country}
+                </p>
               </div>
-              <div>
-                <p className="text-gray-400 text-sm">Total de Visitas</p>
-                <p className="font-bold text-xl">{selectedVisitor.visitor.total_visits}</p>
+              <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-pink-500/20 p-4 rounded-xl">
+                <p className="text-purple-300 text-sm mb-1">Total de Visitas</p>
+                <p className="text-white font-bold text-2xl">{selectedVisitor.visitor.total_visits}</p>
               </div>
-              <div>
-                <p className="text-gray-400 text-sm">Localização</p>
-                <p>{selectedVisitor.visitor.city}, {selectedVisitor.visitor.region}, {selectedVisitor.visitor.country}</p>
+              <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-pink-500/20 p-4 rounded-xl">
+                <p className="text-purple-300 text-sm mb-1">Dispositivo</p>
+                <p className="text-white font-medium break-words">
+                  {selectedVisitor.visitor.device_type} - {selectedVisitor.visitor.browser}
+                </p>
               </div>
-              <div>
-                <p className="text-gray-400 text-sm">Dispositivo</p>
-                <p>{selectedVisitor.visitor.device_type} - {selectedVisitor.visitor.browser}</p>
+              <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-pink-500/20 p-4 rounded-xl">
+                <p className="text-purple-300 text-sm mb-1">Sistema</p>
+                <p className="text-white font-medium break-words">{selectedVisitor.visitor.os}</p>
               </div>
             </div>
 
-            <div className="mb-6">
-              <h3 className="font-bold mb-2">Eventos ({selectedVisitor.events.length})</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-white mb-4">Ações Realizadas ({selectedVisitor.events.length})</h3>
+              <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
                 {selectedVisitor.events.map((event: any) => (
-                  <div key={event.id} className="bg-gray-700 p-3 rounded">
-                    <div className="flex justify-between">
-                      <span className="text-purple-400">{event.event_type}</span>
-                      <span className="text-gray-400 text-sm">{formatDate(event.timestamp)}</span>
+                  <div key={event.id} className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-pink-500/20 p-4 rounded-xl">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1 pr-4">
+                        <p className="text-pink-300 font-medium break-words">
+                          {translateEventType(event.event_type, event.event_data)}
+                        </p>
+                        <p className="text-purple-300 text-sm mt-1 break-all">{getPageName(event.page_url)}</p>
+                      </div>
+                      <span className="text-purple-400 text-xs whitespace-nowrap">{formatDate(event.timestamp)}</span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="mb-6">
-              <h3 className="font-bold mb-2">Páginas Visitadas ({selectedVisitor.pageViews.length})</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-white mb-4">Páginas Visitadas ({selectedVisitor.pageViews.length})</h3>
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                 {selectedVisitor.pageViews.map((page: any) => (
-                  <div key={page.id} className="bg-gray-700 p-3 rounded">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="text-sm">{page.page_url}</p>
-                        <p className="text-xs text-gray-400">{page.page_title}</p>
-                      </div>
-                      <div className="text-right text-sm text-gray-400">
-                        <p>{page.time_spent}s</p>
-                        <p>{page.scroll_depth}% scroll</p>
+                  <div key={page.id} className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-pink-500/20 p-4 rounded-xl">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-medium break-words">{getPageName(page.page_url)}</p>
+                        <p className="text-purple-300 text-sm mt-1">Ficou {page.time_spent} segundos na página</p>
+                        <p className="text-purple-400 text-sm">Rolou {page.scroll_depth}% da página</p>
                       </div>
                     </div>
                   </div>
@@ -456,22 +519,36 @@ export default function AdminDashboard() {
             </div>
 
             {selectedVisitor.registration && (
-              <div>
-                <h3 className="font-bold mb-2">Dados de Cadastro</h3>
-                <div className="bg-gray-700 p-4 rounded">
-                  <p><strong>Email:</strong> {selectedVisitor.registration.email}</p>
-                  <p><strong>Nome:</strong> {selectedVisitor.registration.name}</p>
-                  {selectedVisitor.registration.phone && (
-                    <p><strong>Telefone:</strong> {selectedVisitor.registration.phone}</p>
-                  )}
-                  <p><strong>Data:</strong> {formatDate(selectedVisitor.registration.registered_at)}</p>
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-white mb-4">Dados de Cadastro</h3>
+                <div className="bg-gradient-to-r from-pink-900/30 to-purple-900/30 border border-pink-500/30 p-6 rounded-xl">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-purple-300 text-sm">Nome</p>
+                      <p className="text-white font-bold text-lg break-words">{selectedVisitor.registration.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-purple-300 text-sm">Email</p>
+                      <p className="text-white font-medium break-all">{selectedVisitor.registration.email}</p>
+                    </div>
+                    {selectedVisitor.registration.phone && (
+                      <div>
+                        <p className="text-purple-300 text-sm">Telefone</p>
+                        <p className="text-white font-medium">{selectedVisitor.registration.phone}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-purple-300 text-sm">Data do Cadastro</p>
+                      <p className="text-white font-medium">{formatDate(selectedVisitor.registration.registered_at)}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             <button
               onClick={() => setSelectedVisitor(null)}
-              className="mt-6 w-full bg-purple-600 hover:bg-purple-700 py-2 rounded-lg transition"
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold py-4 rounded-xl transition-all duration-300 shadow-lg shadow-pink-500/30"
             >
               Fechar
             </button>
