@@ -4,7 +4,7 @@ function Logo() {
       <img
         src="/Formula ENGAJAMENTO.png"
         alt="Fórmula Engajamento"
-        className="h-32 w-auto object-contain filter drop-shadow-lg"
+        className="h-32 w-auto object-contain filter drop-shadow-lg animate-float-fade"
       />
     </div>
   );
