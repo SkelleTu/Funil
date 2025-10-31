@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { User, Phone, Mail } from 'lucide-react';
 import Logo from '../components/Logo';
+import { analytics } from '../utils/analytics';
 
 interface RegistrationPageProps {
   onComplete: (data: { name: string; phone: string; email: string }) => void;
@@ -14,9 +15,10 @@ function RegistrationPage({ onComplete, onNavigateToHome }: RegistrationPageProp
     email: ''
   });
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (formData.name && formData.phone && formData.email) {
+      await analytics.trackRegistration(formData);
       onComplete(formData);
     }
   };
