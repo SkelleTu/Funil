@@ -4,9 +4,10 @@ import Logo from '../components/Logo';
 
 interface RegistrationPageProps {
   onComplete: (data: { name: string; phone: string; email: string }) => void;
+  onNavigateToHome: () => void;
 }
 
-function RegistrationPage({ onComplete }: RegistrationPageProps) {
+function RegistrationPage({ onComplete, onNavigateToHome }: RegistrationPageProps) {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -26,7 +27,7 @@ function RegistrationPage({ onComplete }: RegistrationPageProps) {
 
       <div className="relative w-full max-w-md">
         <div className="py-8">
-          <Logo />
+          <Logo onClick={onNavigateToHome} />
         </div>
 
         <div className="bg-gray-900/80 backdrop-blur-sm border-2 border-pink-500/30 rounded-2xl p-8 shadow-2xl shadow-pink-500/20">

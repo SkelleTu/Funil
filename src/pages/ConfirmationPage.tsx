@@ -7,9 +7,10 @@ interface ConfirmationPageProps {
     phone: string;
     email: string;
   };
+  onNavigateToHome: () => void;
 }
 
-function ConfirmationPage({ userData }: ConfirmationPageProps) {
+function ConfirmationPage({ userData, onNavigateToHome }: ConfirmationPageProps) {
   const firstName = userData.name.split(' ')[0];
 
   return (
@@ -18,7 +19,7 @@ function ConfirmationPage({ userData }: ConfirmationPageProps) {
 
       <div className="relative w-full max-w-2xl">
         <div className="py-8">
-          <Logo />
+          <Logo onClick={onNavigateToHome} />
         </div>
 
         <div className="bg-gray-900/80 backdrop-blur-sm border-2 border-pink-500/30 rounded-2xl p-8 md:p-12 shadow-2xl shadow-pink-500/20">

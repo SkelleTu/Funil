@@ -7,6 +7,10 @@ function App() {
   const [currentPage, setCurrentPage] = useState<'landing' | 'registration' | 'confirmation'>('landing');
   const [userData, setUserData] = useState({ name: '', phone: '', email: '' });
 
+  const handleNavigateToHome = () => {
+    setCurrentPage('landing');
+  };
+
   const handleNavigateToRegistration = () => {
     setCurrentPage('registration');
   };
@@ -18,9 +22,9 @@ function App() {
 
   return (
     <>
-      {currentPage === 'landing' && <LandingPage onNavigate={handleNavigateToRegistration} />}
-      {currentPage === 'registration' && <RegistrationPage onComplete={handleRegistrationComplete} />}
-      {currentPage === 'confirmation' && <ConfirmationPage userData={userData} />}
+      {currentPage === 'landing' && <LandingPage onNavigate={handleNavigateToRegistration} onNavigateToHome={handleNavigateToHome} />}
+      {currentPage === 'registration' && <RegistrationPage onComplete={handleRegistrationComplete} onNavigateToHome={handleNavigateToHome} />}
+      {currentPage === 'confirmation' && <ConfirmationPage userData={userData} onNavigateToHome={handleNavigateToHome} />}
     </>
   );
 }

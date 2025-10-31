@@ -5,9 +5,10 @@ import juliaoPhoto from '@assets/d6e291de-eacc-42d3-9d0e-8cbb221f9bba_1761885993
 
 interface LandingPageProps {
   onNavigate: () => void;
+  onNavigateToHome: () => void;
 }
 
-function LandingPage({ onNavigate }: LandingPageProps) {
+function LandingPage({ onNavigate, onNavigateToHome }: LandingPageProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const videoRef = useRef<HTMLDivElement>(null);
@@ -74,7 +75,7 @@ function LandingPage({ onNavigate }: LandingPageProps) {
 
       <div className="relative">
         <header className="container mx-auto px-4 py-8">
-          <Logo />
+          <Logo onClick={onNavigateToHome} />
         </header>
 
         <main className="container mx-auto px-4 py-8">
