@@ -8,32 +8,63 @@ interface LandingPageProps {
 
 function LandingPage({ onNavigate }: LandingPageProps) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState(1);
+  const [progress, setProgress] = useState(0);
   const videoRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   const handlePlayClick = () => {
     if (!isPlaying) {
       setIsPlaying(true);
-      setPlaybackRate(8);
-
-      setTimeout(() => {
-        setPlaybackRate(4);
-      }, 2000);
-
-      setTimeout(() => {
-        setPlaybackRate(2);
-      }, 4000);
-
-      setTimeout(() => {
-        setPlaybackRate(1);
-      }, 6000);
+      setProgress(0);
+      startTimeRef.current = Date.now();
+      animateProgress();
     }
+  };
+
+  const animateProgress = () => {
+    const animate = () => {
+      if (!startTimeRef.current) return;
+      
+      const elapsed = (Date.now() - startTimeRef.current) / 1000;
+      
+      // Função de easing: começa rápido e desacelera
+      let newProgress;
+      if (elapsed < 10) {
+        // Primeiros 10 segundos: avança até 60% rapidamente
+        newProgress = (elapsed / 10) * 60;
+      } else if (elapsed < 30) {
+        // Próximos 20 segundos: avança de 60% até 85% (mais lento)
+        newProgress = 60 + ((elapsed - 10) / 20) * 25;
+      } else if (elapsed < 60) {
+        // Próximos 30 segundos: avança de 85% até 95% (muito lento)
+        newProgress = 85 + ((elapsed - 30) / 30) * 10;
+      } else {
+        // Depois de 60 segundos: avança muito devagar até 100%
+        newProgress = 95 + ((elapsed - 60) / 120) * 5;
+      }
+      
+      newProgress = Math.min(newProgress, 100);
+      setProgress(newProgress);
+      
+      if (newProgress < 100) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
+    };
+    
+    animationRef.current = requestAnimationFrame(animate);
   };
 
   useEffect(() => {
     if (isPlaying && videoRef.current) {
       videoRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
   }, [isPlaying]);
 
   return (
@@ -41,19 +72,15 @@ function LandingPage({ onNavigate }: LandingPageProps) {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(236,72,153,0.15),transparent_50%),radial-gradient(circle_at_70%_60%,rgba(168,85,247,0.15),transparent_50%)]"></div>
 
       <div className="relative">
-        <header className="container mx-auto px-4 py-8">
+        <header className="container mx-auto px-4 py-4">
           <Logo />
         </header>
 
-        <main className="container mx-auto px-4 py-12">
-          <div className="max-w-5xl mx-auto text-center mb-16">
-            <div className="inline-block mb-6 px-6 py-2 bg-gradient-to-r from-pink-500/20 to-purple-500/20 rounded-full border border-pink-500/30">
+        <main className="container mx-auto px-4 py-6">
+          <div className="max-w-5xl mx-auto text-center mb-12">
+            <div className="inline-block mb-8 px-6 py-2 bg-gradient-to-r from-pink-500/20 to-purple-500/20 rounded-full border border-pink-500/30">
               <p className="text-pink-300 font-semibold">Fórmula Engajamento</p>
             </div>
-
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-pink-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-tight">
-              Quase acabando...
-            </h1>
 
             <p className="text-2xl md:text-3xl text-gray-300 mb-12 leading-relaxed">
               Aprenda a transformar cada curtida, comentário e compartilhamento em <span className="text-pink-400 font-semibold">crescimento real</span>.
@@ -65,11 +92,11 @@ function LandingPage({ onNavigate }: LandingPageProps) {
             className="max-w-4xl mx-auto mb-16 relative group"
           >
             <div className="relative rounded-2xl overflow-hidden border-2 border-pink-500/30 shadow-2xl shadow-pink-500/20">
-              <div className="aspect-video bg-gradient-to-br from-gray-900 to-purple-900 flex items-center justify-center">
+              <div className="aspect-video bg-gradient-to-br from-gray-900 to-purple-900 flex items-center justify-center relative">
                 {!isPlaying ? (
                   <button
                     onClick={handlePlayClick}
-                    className="group-hover:scale-110 transition-transform duration-300"
+                    className="group-hover:scale-110 transition-transform duration-300 z-10"
                   >
                     <div className="w-24 h-24 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center shadow-lg shadow-pink-500/50">
                       <Play className="w-12 h-12 text-white ml-2" fill="white" />
@@ -80,9 +107,19 @@ function LandingPage({ onNavigate }: LandingPageProps) {
                     <div className="text-center">
                       <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                       <p className="text-pink-300 text-lg">
-                        Reproduzindo {playbackRate > 1 ? `${playbackRate}x` : ''}
+                        Reproduzindo...
                       </p>
                     </div>
+                  </div>
+                )}
+                
+                {/* Barra de progresso */}
+                {isPlaying && (
+                  <div className="absolute bottom-0 left-0 right-0 h-2 bg-gray-800/80">
+                    <div 
+                      className="h-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all duration-300 ease-out"
+                      style={{ width: `${progress}%` }}
+                    ></div>
                   </div>
                 )}
               </div>
