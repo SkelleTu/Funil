@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Play, CheckCircle, Zap, Users, TrendingUp, Award, Target, Rocket } from 'lucide-react';
 import Logo from '../components/Logo';
+import juliaoPhoto from '@assets/d6e291de-eacc-42d3-9d0e-8cbb221f9bba_1761885993150.jpg';
 
 interface LandingPageProps {
   onNavigate: () => void;
@@ -221,9 +222,13 @@ function LandingPage({ onNavigate }: LandingPageProps) {
               </div>
 
               <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="w-40 h-40 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 p-1">
-                  <div className="w-full h-full rounded-full bg-gray-900 flex items-center justify-center text-6xl font-bold text-transparent bg-gradient-to-br from-pink-400 to-purple-400 bg-clip-text">
-                    JC
+                <div className="w-40 h-40 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 p-1 flex-shrink-0">
+                  <div className="w-full h-full rounded-full overflow-hidden">
+                    <img 
+                      src={juliaoPhoto} 
+                      alt="Júlio Calori - Julião" 
+                      className="w-full h-full object-cover object-center"
+                    />
                   </div>
                 </div>
 
